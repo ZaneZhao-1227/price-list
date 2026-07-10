@@ -70,8 +70,26 @@ const RAW_BASE = 'https://raw.githubusercontent.com';
 /**
  * 从仓库读取文件内容（通过 GitHub API）
  */
+/** 公开读：无需 token，适合选购页/汇总页 */
+async function gitHubGetFilePublic(path) {
+  const cfg = getGiteeConfig();
+  const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+  const resp = await fetch(url, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' },
+  });
+  if (!resp.ok) {
+    if (resp.status === 404) throw new Error('文件不存在');
+    throw new Error(`读取失败: ${resp.status}`);
+  }
+  const data = await resp.json();
+  const decoded = b64DecodeUtf8(data.content);
+  return JSON.parse(decoded);
+}
+
+/** 认证读：需要 token，获取 SHA 用于写入 */
 async function gitHubGetFile(path) {
   const cfg = getGiteeConfig();
+  if (!cfg.token) throw new Error('需要配置 token');
   const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`;
   const resp = await fetch(url, {
     headers: {
@@ -81,7 +99,7 @@ async function gitHubGetFile(path) {
   });
   if (!resp.ok) {
     if (resp.status === 404) throw new Error('文件不存在');
-    throw new Error(`读取失败: ${resp.status} ${resp.statusText}`);
+    throw new Error(`读取失败: ${resp.status}`);
   }
   const data = await resp.json();
   const decoded = b64DecodeUtf8(data.content);
@@ -148,18 +166,15 @@ const ITEMS_PATH = 'data/items.json';
 
 /** 读取物品清单 */
 async function fetchItems() {
-  // 优先用 API（有 token 时实时返回最新数据，无 CDN 延迟）
-  if (hasGiteeConfig()) {
-    try {
-      const result = await gitHubGetFile(ITEMS_PATH);
-      return result.data;
-    } catch { /* API 失败则回退 raw */ }
-  }
-  // 无 token 或无配置时通过 raw URL 读取
+  // 优先公开 API 读（无需 token，实时返回）
+  try {
+    return await gitHubGetFilePublic(ITEMS_PATH);
+  } catch { }
+  // 回退 raw URL
   try {
     return await fetchRawFile(ITEMS_PATH);
   } catch {
-    throw new Error('无法读取物品清单，请先在管理页配置仓库并保存物品');
+    throw new Error('无法读取物品清单');
   }
 }
 
@@ -204,9 +219,13 @@ const SELECTIONS_PATH = 'data/selections.json';
 /** 读取选购数据 */
 async function fetchSelections() {
   try {
-    const result = await gitHubGetFile(SELECTIONS_PATH);
-    return result.data;
-  } catch { return {}; }
+    return await gitHubGetFilePublic(SELECTIONS_PATH);
+  } catch {
+    try {
+      const result = await gitHubGetFile(SELECTIONS_PATH);
+      return result.data;
+    } catch { return {}; }
+  }
 }
 
 /** 保存选购数据 */
