@@ -23,7 +23,6 @@ const elSaveBtn    = $('#btn-save');
 const elResetBtn   = $('#btn-reset');
 const elToast      = $('#toast');
 const elPeople     = $('#people-count');
-const elRefreshBtn = $('#btn-refresh-items');
 const elUpdateTime = $('#update-time');
 
 let autoTimer = null;
@@ -186,13 +185,7 @@ function bindEvents() {
   elSaveBtn.addEventListener('click', save);
   elResetBtn.addEventListener('click', resetSelections);
 
-  if (elRefreshBtn) {
-    elRefreshBtn.addEventListener('click', async () => {
-      await refreshItems();
-      await renderPeople();
-      showToast('已刷新物品清单');
-    });
-  }
+
 }
 
 function changeQty(id, delta) {
