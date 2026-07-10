@@ -149,10 +149,7 @@ function cardHTML(item, qty) {
 
 /** 显示已提交人数 */
 async function renderPeople() {
-  if (!hasGiteeConfig()) {
-    elPeople.textContent = '数据存本地';
-    return;
-  }
+  // 通过公开 API 读取选购人数（无需 token）
   try {
     const selections = await fetchSelections();
     const count = Object.keys(selections).length;
