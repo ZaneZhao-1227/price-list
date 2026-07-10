@@ -186,10 +186,7 @@ function bindEvents() {
   // 保存表单
   $('#btn-save-form').addEventListener('click', saveItemForm);
 
-  // 保存到 Gitee
-  $('#btn-save-gitee').addEventListener('click', saveToGitee);
-
-  // 从 Gitee 加载
+  // 从 GitHub 加载
   $('#btn-load-gitee').addEventListener('click', loadFromGitee);
 
   // 保存配置
@@ -291,6 +288,15 @@ function deleteItem(index) {
   renderItems();
   showToast('已删除');
   autoSave();
+  
+  if (hasGiteeConfig()) {
+    setTimeout(async () => {
+      try {
+        const data = { categories: state.categories, items: state.items };
+        await saveItems(data);
+      } catch { }
+    }, 100);
+  }
 }
 
 // ============================================================
