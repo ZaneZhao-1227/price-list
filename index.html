@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>明日采购 · 选购</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h1>🛒 明日采购</h1>
+      <span class="date-badge" id="date-badge"></span>
+    </div>
+    <nav class="app-nav">
+      <a href="index.html" class="active">选购</a>
+      <a href="summary.html">汇总</a>
+      <a href="admin.html">管理</a>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <!-- 配置提示 -->
+    <div class="config-tip" id="config-tip" style="display:none;">
+      ⚠️ 数据仅保存在本地浏览器。如需多设备共享，
+      <a href="admin.html">请先配置 Gitee 同步</a>
+    </div>
+
+    <!-- 用户名 -->
+    <div class="user-area" style="margin-bottom:20px;">
+      <label style="font-size:14px;font-weight:500;white-space:nowrap;">你的名字</label>
+      <input type="text" id="username" placeholder="输入姓名" maxlength="10">
+      <span style="font-size:12px;color:var(--color-text-secondary);" id="people-count"></span>
+    </div>
+
+    <!-- 物品列表 -->
+    <div id="items-container"></div>
+
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <div class="left">
+        <button class="btn btn-primary" id="btn-save">💾 保存选购</button>
+        <button class="btn btn-outline" id="btn-reset">🗑 清空</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/gitee-api.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/select.js"></script>
+</body>
+</html>
