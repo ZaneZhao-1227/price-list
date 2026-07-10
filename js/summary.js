@@ -63,7 +63,7 @@ function startAutoRefresh() {
   if (autoTimer) clearInterval(autoTimer);
   autoTimer = setInterval(async () => {
     await refresh();
-  }, 15000); // 15 秒
+  }, 3000); // 3 秒
   updateAutoStatus(true);
 }
 
