@@ -55,7 +55,7 @@ function startAutoRefresh() {
   if (autoTimer) clearInterval(autoTimer);
   autoTimer = setInterval(async () => {
     await refreshItems();
-  }, 15000);
+  }, 3000); // 3 秒
 }
 
 // ============================================================
