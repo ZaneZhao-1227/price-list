@@ -213,15 +213,26 @@ async function save() {
 
   saveUser(state.username, cleaned);
 
+  // 没有 token 时弹窗让用户输入一次
+  if (!hasGiteeConfig()) {
+    const token = prompt('需要输入共享密钥才能同步。
+请联系管理员获取密钥：');
+    if (token && token.trim()) {
+      const cfg = getGiteeConfig();
+      cfg.token = token.trim();
+      saveGiteeConfig(cfg);
+    }
+  }
+
   if (hasGiteeConfig()) {
     try {
       let all = {};
-      try { all = await fetchSelections(); } catch { /* 文件还不存在 */ }
+      try { all = await fetchSelections(); } catch { }
       all[state.username] = cleaned;
       await saveSelections(all);
-      showToast('✅ 已保存并同步');
+      showToast('✅ 已保存');
     } catch (e) {
-      showToast('⚠️ 已保存到本地，云端同步失败: ' + e.message);
+      showToast('⚠️ 已保存到本地，同步失败: ' + e.message);
     }
   } else {
     showToast('✅ 已保存到本地');
