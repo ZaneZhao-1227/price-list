@@ -24,14 +24,15 @@
     <!-- 配置提示 -->
     <div class="config-tip" id="config-tip" style="display:none;">
       ⚠️ 数据仅保存在本地浏览器。如需多设备共享，
-      <a href="admin.html">请先配置 Gitee 同步</a>
+      <a href="admin.html">请先配置 GitHub 同步</a>
     </div>
 
     <!-- 用户名 -->
-    <div class="user-area" style="margin-bottom:20px;">
+    <div class="user-area" style="margin-bottom:16px;">
       <label style="font-size:14px;font-weight:500;white-space:nowrap;">你的名字</label>
       <input type="text" id="username" placeholder="输入姓名" maxlength="10">
       <span style="font-size:12px;color:var(--color-text-secondary);" id="people-count"></span>
+      <span style="margin-left:auto;font-size:12px;color:var(--color-text-secondary);" id="update-time">自动刷新中（30秒）</span>
     </div>
 
     <!-- 物品列表 -->
@@ -42,6 +43,9 @@
       <div class="left">
         <button class="btn btn-primary" id="btn-save">💾 保存选购</button>
         <button class="btn btn-outline" id="btn-reset">🗑 清空</button>
+      </div>
+      <div class="right">
+        <button class="btn btn-outline" id="btn-refresh-items">🔄 刷新物品</button>
       </div>
     </div>
   </main>
