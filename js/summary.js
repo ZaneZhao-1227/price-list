@@ -12,6 +12,7 @@ const elDate      = $('#date-badge');
 const elSummary   = $('#summary-container');
 const elUsers     = $('#user-list');
 const elRefresh   = $('#btn-refresh');
+const elClear = $('#btn-clear-all');
 const elToast     = $('#toast');
 const elConfigTip = $('#config-tip');
 const elAutoStatus = $('#auto-status');
@@ -42,6 +43,8 @@ async function init() {
 
 function bindEvents() {
   elRefresh.addEventListener('click', async () => {
+  elClear.addEventListener("click", clearAllSelections);
+
     await refresh();
     showToast('已刷新');
   });
@@ -262,6 +265,28 @@ function renderGrandTotal(userList, totalQty, totalAmount) {
 // Toast
 // ============================================================
 let toastTimer = null;
+
+/** 清空所有人的选购数据 */
+async function clearAllSelections() {
+  if (!confirm('确定清空所有人的选购清单吗？此操作不可恢复。')) return;
+  
+  // 清空本地
+  localStorage.removeItem('purchase_selections');
+  
+  // 清空 GitHub
+  if (hasGiteeConfig()) {
+    try {
+      await saveSelections({});
+    } catch (e) {
+      showToast('❌ 清空失败: ' + e.message);
+      return;
+    }
+  }
+  
+  await refresh();
+  showToast('✅ 已清空所有选购');
+}
+
 function showToast(msg) {
   elToast.textContent = msg;
   elToast.classList.add('show');
