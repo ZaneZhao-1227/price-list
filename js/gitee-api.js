@@ -1,11 +1,12 @@
 /**
- * Gitee API 封装层
+ * GitHub API 封装层
  *
- * 通过 Gitee API v5 读写仓库中的 JSON 数据文件，
+ * 通过 GitHub REST API 读写仓库中的 JSON 数据文件，
  * 实现多设备数据共享。
  *
  * 使用方法：
- *   1. 在 Gitee 生成 Personal Access Token（勾选 contents 权限）
+ *   1. 在 GitHub → Settings → Developer settings → Personal access tokens
+ *      生成 classic token（勾选 repo 权限）
  *   2. 在管理页配置仓库 owner、repo、token
  *   3. 物品数据存放在 repo 的 data/items.json
  *   4. 选购数据存放在 repo 的 data/selections.json
@@ -18,13 +19,13 @@
 const CONFIG_KEY = 'gitee_config';
 
 const defaultConfig = {
-  owner: '',
-  repo: '',
+  owner: 'ZaneZhao-1227',
+  repo: 'price-list',
   branch: 'main',
   token: '',
 };
 
-/** 读取 Gitee 配置 */
+/** 读取 GitHub 配置 */
 function getGiteeConfig() {
   try {
     const raw = localStorage.getItem(CONFIG_KEY);
@@ -34,7 +35,7 @@ function getGiteeConfig() {
   }
 }
 
-/** 保存 Gitee 配置 */
+/** 保存 GitHub 配置 */
 function saveGiteeConfig(config) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 }
@@ -49,76 +50,77 @@ function hasGiteeConfig() {
 // API 请求
 // ============================================================
 
-const API_BASE = 'https://gitee.com/api/v5';
+const API_BASE = 'https://api.github.com';
+const RAW_BASE = 'https://raw.githubusercontent.com';
 
 /**
- * 从仓库读取文件内容
- * 使用 Gitee API v5（需 token），返回解析后的 JSON
+ * 从仓库读取文件内容（通过 GitHub API）
  */
-async function giteeGetFile(path) {
+async function gitHubGetFile(path) {
   const cfg = getGiteeConfig();
-  const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
-  const resp = await fetch(url + `?access_token=${cfg.token}&ref=${cfg.branch}`);
+  const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`;
+  const resp = await fetch(url, {
+    headers: {
+      'Authorization': `token ${cfg.token}`,
+      'Accept': 'application/vnd.github.v3+json',
+    },
+  });
   if (!resp.ok) {
+    if (resp.status === 404) throw new Error('文件不存在');
     throw new Error(`读取失败: ${resp.status} ${resp.statusText}`);
   }
   const data = await resp.json();
-  // API 返回的 content 是 base64 编码
   const decoded = atob(data.content);
   return { data: JSON.parse(decoded), sha: data.sha };
 }
 
 /**
  * 写入文件到仓库
- * 如果文件存在需传入 sha，不存在则新建
  */
-async function giteePutFile(path, content, sha) {
+async function gitHubPutFile(path, content, sha) {
   const cfg = getGiteeConfig();
   const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
   const body = {
-    access_token: cfg.token,
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
     message: `更新 ${path}`,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
     branch: cfg.branch,
   };
   if (sha) body.sha = sha;
   const resp = await fetch(url, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `token ${cfg.token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github.v3+json',
+    },
     body: JSON.stringify(body),
   });
   if (!resp.ok) {
     const errText = await resp.text().catch(() => '');
-    throw new Error(`写入失败: ${resp.status} ${resp.statusText}${errText ? ' - ' + errText : ''}`);
+    throw new Error(`写入失败: ${resp.status} ${resp.statusText}${errText ? ' - ' + errText.slice(0, 200) : ''}`);
   }
   return await resp.json();
 }
 
 /**
- * 从原始文件 URL 读取（无需 token，只读）
- * 适合部署后读取 items.json
+ * 从 raw.githubusercontent.com 读取 JSON 文件（无需 token，适合 GitHub Pages）
  */
 async function fetchRawFile(path) {
   const cfg = getGiteeConfig();
-  // 依次尝试 Gitee Pages 和 Gitee raw
   const urls = [
-    // Gitee Pages (如果是默认 Pages 域名)
-    `https://${cfg.owner}.gitee.io/${cfg.repo}/${path}`,
-    // Gitee raw 文件
-    `https://gitee.com/${cfg.owner}/${cfg.repo}/raw/${cfg.branch}/${path}`,
+    // GitHub Pages
+    `https://${cfg.owner}.github.io/${cfg.repo}/${path}`,
+    // GitHub raw
+    `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path}`,
   ];
-
   let lastErr = null;
   for (const url of urls) {
     try {
       const resp = await fetch(url, { mode: 'cors' });
       if (resp.ok) return await resp.json();
-      // 403 或 404 可能是路径问题，继续尝试下一个
-    } catch (e) {
-      lastErr = e;
-    }
+    } catch (e) { lastErr = e; }
   }
-  throw new Error(`无法读取文件 ${path}，请确认仓库已部署 Pages 或检查配置`);
+  throw new Error(`无法读取文件 ${path}: ${lastErr ? lastErr.message : '未知错误'}`);
 }
 
 // ============================================================
@@ -127,34 +129,29 @@ async function fetchRawFile(path) {
 
 const ITEMS_PATH = 'data/items.json';
 
-/** 读取物品清单（优先从 Gitee 静态文件，回退到 data.js 内置数据） */
+/** 读取物品清单 */
 async function fetchItems() {
   try {
     return await fetchRawFile(ITEMS_PATH);
   } catch {
-    // 回退：尝试用 API 读
     try {
-      const result = await giteeGetFile(ITEMS_PATH);
+      const result = await gitHubGetFile(ITEMS_PATH);
       return result.data;
     } catch {
-      // 最终回退
-      throw new Error('无法读取物品清单，请先在管理页配置 Gitee 并保存物品');
+      throw new Error('无法读取物品清单，请先在管理页配置仓库并保存物品');
     }
   }
 }
 
 /** 保存物品清单到仓库 */
 async function saveItems(items) {
-  if (!hasGiteeConfig()) throw new Error('请先在管理页配置 Gitee 仓库信息');
-
+  if (!hasGiteeConfig()) throw new Error('请先在管理页配置仓库信息');
   let sha;
   try {
-    const existing = await giteeGetFile(ITEMS_PATH);
+    const existing = await gitHubGetFile(ITEMS_PATH);
     sha = existing.sha;
-  } catch {
-    sha = undefined; // 文件不存在，新建
-  }
-  await giteePutFile(ITEMS_PATH, items, sha);
+  } catch { sha = undefined; }
+  await gitHubPutFile(ITEMS_PATH, items, sha);
 }
 
 // ============================================================
@@ -166,24 +163,18 @@ const SELECTIONS_PATH = 'data/selections.json';
 /** 读取选购数据 */
 async function fetchSelections() {
   try {
-    const result = await giteeGetFile(SELECTIONS_PATH);
+    const result = await gitHubGetFile(SELECTIONS_PATH);
     return result.data;
-  } catch {
-    // 文件还不存在
-    return {};
-  }
+  } catch { return {}; }
 }
 
 /** 保存选购数据 */
 async function saveSelections(selections) {
-  if (!hasGiteeConfig()) throw new Error('请先在管理页配置 Gitee 仓库信息');
-
+  if (!hasGiteeConfig()) throw new Error('请先在管理页配置仓库信息');
   let sha;
   try {
-    const existing = await giteeGetFile(SELECTIONS_PATH);
+    const existing = await gitHubGetFile(SELECTIONS_PATH);
     sha = existing.sha;
-  } catch {
-    sha = undefined;
-  }
-  await giteePutFile(SELECTIONS_PATH, selections, sha);
+  } catch { sha = undefined; }
+  await gitHubPutFile(SELECTIONS_PATH, selections, sha);
 }
