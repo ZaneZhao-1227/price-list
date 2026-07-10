@@ -1,5 +1,6 @@
 /**
  * 汇总端 — 采购汇总页面逻辑
+ * 每 15 秒自动刷新数据
  */
 
 // ============================================================
@@ -13,12 +14,14 @@ const elUsers     = $('#user-list');
 const elRefresh   = $('#btn-refresh');
 const elToast     = $('#toast');
 const elConfigTip = $('#config-tip');
+const elAutoStatus = $('#auto-status');
 
 // ============================================================
 // 状态
 // ============================================================
 let items = [];
 let categories = [];
+let autoTimer = null;
 
 // ============================================================
 // 初始化
@@ -31,23 +34,56 @@ async function init() {
   }
 
   await loadData();
-  render();
+  await render();
   bindEvents();
+  // 启动自动刷新
+  startAutoRefresh();
 }
 
 function bindEvents() {
   elRefresh.addEventListener('click', async () => {
-    await loadData();
-    render();
+    await refresh();
     showToast('已刷新');
   });
+}
+
+/** 手动或定时刷新 */
+async function refresh() {
+  await loadData();
+  await render();
+  updateAutoTime();
+}
+
+// ============================================================
+// 自动刷新
+// ============================================================
+function startAutoRefresh() {
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(async () => {
+    await refresh();
+  }, 15000); // 15 秒
+  updateAutoStatus(true);
+}
+
+function updateAutoStatus(running) {
+  if (elAutoStatus) {
+    elAutoStatus.textContent = running ? '🔄 自动刷新中（15秒）' : '';
+    elAutoStatus.style.display = running ? '' : 'none';
+  }
+}
+
+function updateAutoTime() {
+  const el = $('#last-update');
+  if (el) {
+    const now = new Date();
+    el.textContent = `上次更新: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  }
 }
 
 // ============================================================
 // 加载数据
 // ============================================================
 async function loadData() {
-  // 加载物品清单
   try {
     const data = await fetchItems();
     items = data.items || [];
@@ -70,7 +106,7 @@ async function render() {
     } catch { /* 文件还不存在 */ }
   }
 
-  // 同时也合并本地数据（如果同一浏览器）
+  // 合并本地数据
   mergeLocalSelections(selections);
 
   const userList = Object.keys(selections);
@@ -84,9 +120,7 @@ function mergeLocalSelections(selections) {
     if (raw) {
       const local = JSON.parse(raw);
       for (const [user, sel] of Object.entries(local)) {
-        if (!selections[user]) {
-          selections[user] = sel;
-        }
+        if (!selections[user]) selections[user] = sel;
       }
     }
   } catch { /* ignore */ }
@@ -119,7 +153,6 @@ function renderSummary(selections, userList) {
     return;
   }
 
-  // 按分类分组
   const grouped = {};
   for (const cat of categories) grouped[cat.id] = [];
   for (const item of items) {
@@ -134,7 +167,6 @@ function renderSummary(selections, userList) {
     const catItems = grouped[cat.id];
     if (!catItems || catItems.length === 0) continue;
 
-    // 统计这个分类的选购情况
     const rows = [];
     let catTotalQty = 0;
     let catTotalAmount = 0;
@@ -205,7 +237,6 @@ function renderSummary(selections, userList) {
     html += `</tbody></table></div>`;
   }
 
-  // 全局总计
   html += renderGrandTotal(userList, grandTotalQty, grandTotalAmount);
   elSummary.innerHTML = html;
 }
