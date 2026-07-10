@@ -151,7 +151,7 @@ async function fetchRawFile(path) {
       } catch (e) {}
       if (retry === 0) {
         // 第一次失败后等待 500ms 重试
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 50));
       }
     }
   }
@@ -200,12 +200,12 @@ async function saveItems(items) {
         try {
           const existing = await gitHubGetFile(ITEMS_PATH);
           sha = existing.sha;
-          await new Promise(r => setTimeout(r, 500));
+          await new Promise(r => setTimeout(r, 50));
           continue;
         } catch { }
       }
       if (i >= maxRetries) throw e;
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 100));
     }
   }
 }
@@ -249,7 +249,7 @@ async function saveSelections(selections) {
         } catch { }
       }
       if (i >= 3) throw e;
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 100));
     }
   }
 }
