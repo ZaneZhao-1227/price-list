@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购管理 · 物品</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ---- Admin specific styles ---- */
+    .admin-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+    @media (max-width: 800px) { .admin-layout { grid-template-columns: 1fr; } }
+
+    .admin-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .admin-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+
+    .admin-cat-section { margin-bottom: 16px; }
+    .admin-cat-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--color-text-secondary); }
+    .admin-item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 6px;
+      border: 1px solid var(--color-border);
+      margin-bottom: 4px;
+    }
+    .admin-item-row:hover { background: var(--color-bg); }
+    .admin-thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+    .admin-item-info { flex: 1; min-width: 0; }
+    .admin-item-name { font-size: 14px; font-weight: 500; }
+    .admin-item-meta { font-size: 12px; color: var(--color-text-secondary); }
+    .admin-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .btn-sm {
+      font-size: 12px; padding: 3px 10px; border: 1px solid var(--color-border);
+      border-radius: 4px; background: var(--color-surface); cursor: pointer;
+      transition: background 0.1s;
+    }
+    .btn-sm:hover { background: var(--color-bg); }
+    .btn-del { color: var(--color-danger); border-color: var(--color-danger); }
+    .btn-del:hover { background: var(--color-danger-bg); }
+    .btn-edit { color: var(--color-primary); border-color: var(--color-primary); }
+    .btn-edit:hover { background: var(--color-primary-bg); }
+
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--color-text-secondary); }
+    .form-group input,
+    .form-group select {
+      width: 100%; padding: 7px 10px; font-size: 14px;
+      border: 1px solid var(--color-border); border-radius: 6px; outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-bg); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+    .config-field { margin-bottom: 8px; }
+    .config-field input { width: 100%; padding: 7px 10px; font-size: 13px; border: 1px solid var(--color-border); border-radius: 6px; outline: none; }
+    .config-field input:focus { border-color: var(--color-primary); }
+    .config-field label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 2px; color: var(--color-text-secondary); }
+
+    .status-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h1>⚙️ 物品管理</h1>
+      <span class="date-badge" id="gitee-status">⚠️ 未配置</span>
+    </div>
+    <nav class="app-nav">
+      <a href="index.html">选购</a>
+      <a href="summary.html">汇总</a>
+      <a href="admin.html" class="active">管理</a>
+    </nav>
+  </header>
+
+  <main class="app-main">
+
+    <div class="admin-layout">
+
+      <!-- ======== 左侧：物品列表 ======== -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btn-add-item">＋ 添加物品</button>
+          <button class="btn btn-success" id="btn-save-gitee">☁️ 同步到 Gitee</button>
+          <button class="btn btn-outline" id="btn-load-gitee">📥 从 Gitee 加载</button>
+          <button class="btn btn-outline" id="btn-add-category">＋ 添加分类</button>
+        </div>
+
+        <!-- 物品表单（折叠） -->
+        <div class="admin-card" id="item-form" style="display:none;">
+          <h3 id="form-title">添加物品</h3>
+          <input type="hidden" id="item-id">
+          <div class="form-group">
+            <label>物品名称</label>
+            <input type="text" id="item-name" placeholder="如：康师傅红烧牛肉面" maxlength="30">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>价格 (¥)</label>
+              <input type="number" id="item-price" placeholder="4.5" step="0.1" min="0">
+            </div>
+            <div class="form-group">
+              <label>单位</label>
+              <input type="text" id="item-unit" placeholder="包、个、瓶" maxlength="6">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>分类</label>
+            <select id="item-category"></select>
+          </div>
+          <div class="form-group">
+            <label>照片链接（可选）</label>
+            <input type="url" id="item-photo" placeholder="https://example.com/photo.jpg">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="btn-save-form">保存</button>
+            <button class="btn btn-outline" id="btn-cancel-form">取消</button>
+          </div>
+        </div>
+
+        <!-- 物品列表 -->
+        <div id="item-list">
+          <div class="empty-state"><p>加载中...</p></div>
+        </div>
+      </div>
+
+      <!-- ======== 右侧：Gitee 配置 ======== -->
+      <div>
+        <div class="admin-card">
+          <h3>🔌 Gitee 配置</h3>
+          <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:12px;">
+            配置后即可多设备同步数据。<br>
+            在 Gitee → 设置 → 私人令牌 生成 token（勾选 contents 权限）。
+          </p>
+          <div class="config-field">
+            <label>仓库所有者</label>
+            <input type="text" id="gitee-owner" placeholder="你的 Gitee 用户名">
+          </div>
+          <div class="config-field">
+            <label>仓库名称</label>
+            <input type="text" id="gitee-repo" placeholder="如：cai-gou">
+          </div>
+          <div class="config-field">
+            <label>分支</label>
+            <input type="text" id="gitee-branch" placeholder="main">
+          </div>
+          <div class="config-field">
+            <label>Personal Access Token</label>
+            <input type="password" id="gitee-token" placeholder="以 ghp_ 开头的 token">
+          </div>
+          <button class="btn btn-outline" id="btn-save-config" style="width:100%;margin-top:4px;">保存配置</button>
+        </div>
+
+        <div class="admin-card">
+          <h3>📄 数据预览</h3>
+          <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">
+            当前共 <span id="item-count">0</span> 个物品，<span id="cat-count">0</span> 个分类
+          </p>
+          <button class="btn btn-outline" id="btn-preview" style="width:100%;">预览 JSON 数据</button>
+        </div>
+
+        <div class="admin-card">
+          <h3>💡 使用步骤</h3>
+          <ol style="font-size:13px;color:var(--color-text-secondary);line-height:1.8;padding-left:18px;">
+            <li>配置上方 Gitee 仓库信息</li>
+            <li>添加物品（名称、价格、单位、分类、照片）</li>
+            <li>点击「同步到 Gitee」</li>
+            <li>其他人即可在选购/汇总页看到数据</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/gitee-api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
