@@ -275,15 +275,31 @@ function saveItemForm() {
   }
 }
 
-function deleteItem(index) {
+async function deleteItem(index) {
   if (!confirm('确定删除该物品？')) return;
   state.items.splice(index, 1);
   renderItems();
   showToast('已删除');
   autoSave();
   
+  // 立即同步到 GitHub
   if (hasGiteeConfig()) {
-    saveItems({ categories: state.categories, items: state.items }).catch(() => {});
+    try {
+      const data = { categories: state.categories, items: state.items };
+      await saveItems(data);
+      // 不重复 toast，上面已经显示"已删除"
+    } catch (e) {
+      showToast('⚠️ 删除失败: ' + e.message);
+      // 同步失败时，从 GitHub 重新加载，让界面恢复正确状态
+      try {
+        const fresh = await fetchItems();
+        if (fresh && fresh.items) {
+          state.items = fresh.items;
+          state.categories = fresh.categories || state.categories;
+          renderItems();
+        }
+      } catch {}
+    }
   }
 }
 
