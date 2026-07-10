@@ -121,21 +121,23 @@ async function gitHubPutFile(path, content, sha) {
  */
 async function fetchRawFile(path) {
   const cfg = getGiteeConfig();
-  const t = Date.now();
-  const urls = [
-    // GitHub raw（加时间戳防缓存）
-    `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path}?t=${t}`,
-    // GitHub Pages
-    `https://${cfg.owner}.github.io/${cfg.repo}/${path}?t=${t}`,
-  ];
-  let lastErr = null;
-  for (const url of urls) {
-    try {
-      const resp = await fetch(url, { mode: 'cors' });
-      if (resp.ok) return await resp.json();
-    } catch (e) { lastErr = e; }
+  const t = Date.now() + Math.random();  // 唯一时间戳，彻底防缓存
+  const rawUrl = `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path}?t=${t}`;
+  const pagesUrl = `https://${cfg.owner}.github.io/${cfg.repo}/${path}?t=${t}`;
+  
+  for (const url of [rawUrl, pagesUrl]) {
+    for (let retry = 0; retry < 2; retry++) {
+      try {
+        const resp = await fetch(url, { mode: 'cors', cache: 'no-store' });
+        if (resp.ok) return await resp.json();
+      } catch (e) {}
+      if (retry === 0) {
+        // 第一次失败后等待 500ms 重试
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
   }
-  throw new Error(`无法读取文件 ${path}: ${lastErr ? lastErr.message : '未知错误'}`);
+  throw new Error('无法读取文件 ' + path + '，请检查网络');
 }
 
 // ============================================================
