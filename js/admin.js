@@ -265,18 +265,11 @@ function saveItemForm() {
   showToast(state.editingIndex >= 0 ? '已更新物品' : '已添加物品');
   autoSave();
   
-  // 自动同步到 GitHub（有 token 时）
+  // 自动同步到 GitHub（有 token 时立即同步）
   if (hasGiteeConfig()) {
-    // 延迟同步，避免 UI 卡顿
-    setTimeout(async () => {
-      try {
-        const data = { categories: state.categories, items: state.items };
-        await saveItems(data);
-        showToast('✅ 已添加并同步');
-      } catch (e) {
-        showToast('⚠️ 已保存本地，同步失败: ' + e.message);
-      }
-    }, 100);
+    saveItems({ categories: state.categories, items: state.items })
+      .then(() => showToast('✅ 已添加并同步'))
+      .catch(e => showToast('⚠️ 已保存本地，同步失败: ' + e.message));
   } else {
     showToast('已添加，别忘了同步到 GitHub');
   }
@@ -290,12 +283,7 @@ function deleteItem(index) {
   autoSave();
   
   if (hasGiteeConfig()) {
-    setTimeout(async () => {
-      try {
-        const data = { categories: state.categories, items: state.items };
-        await saveItems(data);
-      } catch { }
-    }, 100);
+    saveItems({ categories: state.categories, items: state.items }).catch(() => {});
   }
 }
 
