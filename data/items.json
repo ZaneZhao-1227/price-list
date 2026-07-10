@@ -62,6 +62,13 @@
       "price": 9,
       "unit": "个",
       "category": "instant_noodles"
+    },
+    {
+      "id": "test",
+      "name": "test",
+      "price": 9,
+      "unit": "个",
+      "category": "instant_noodles"
     }
   ]
 }
