@@ -21,24 +21,23 @@
   </header>
 
   <main class="app-main">
-    <!-- 配置提示 -->
     <div class="config-tip" id="config-tip" style="display:none;">
       ⚠️ 当前使用本地数据，只显示本机选购记录。
-      <a href="admin.html">配置 Gitee 同步后</a>可查看所有人的选购。
+      <a href="admin.html">配置 GitHub 同步后</a>可查看所有人的选购。
     </div>
 
-    <!-- 参与人 -->
-    <div style="margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+    <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
       <span style="font-size:14px;font-weight:500;">参与人：</span>
       <span id="user-list"></span>
+      <span style="margin-left:auto;font-size:12px;color:var(--color-text-secondary);" id="auto-status">🔄 自动刷新中（15秒）</span>
     </div>
 
-    <!-- 汇总 -->
     <div id="summary-container"></div>
 
     <div class="action-bar">
       <div class="left">
-        <button class="btn btn-outline" id="btn-refresh">🔄 刷新数据</button>
+        <button class="btn btn-outline" id="btn-refresh">🔄 立即刷新</button>
+        <span style="font-size:12px;color:var(--color-text-secondary);" id="last-update"></span>
       </div>
     </div>
   </main>
