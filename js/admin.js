@@ -61,19 +61,22 @@ async function loadItems() {
   // 先从 localStorage 恢复上次的 categories（用户自定义的）
   const customCats = loadCustomCategories();
 
+  // 尝试从 API 加载（优先用线上数据）
   if (hasGiteeConfig()) {
     try {
-      // 尝试从 Gitee 读取物品数据
       const data = await fetchItems();
-      state.items = data.items || [];
-      state.categories = data.categories || [...DEFAULT_CATEGORIES, ...customCats];
-      return;
+      if (data.items && data.items.length > 0) {
+        // 线上有物品 → 用线上的（覆盖本地）
+        state.items = data.items;
+        state.categories = data.categories || [...DEFAULT_CATEGORIES, ...customCats];
+        return;
+      }
     } catch {
-      // fallback
+      // API 失败，fallback 到本地
     }
   }
 
-  // 从 localStorage 回退
+  // 从 localStorage 加载（本地可能有未同步的物品）
   const local = loadLocalItems();
   if (local && local.items && local.items.length > 0) {
     state.items = local.items;
