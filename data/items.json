@@ -1,1 +1,53 @@
-{"categories": [{"id": "breakfast", "name": "早餐", "icon": "🌅"}], "items": []}
+{
+  "categories": [
+    {
+      "id": "instant_noodles",
+      "name": "泡面",
+      "icon": "🍜"
+    },
+    {
+      "id": "breakfast",
+      "name": "早餐",
+      "icon": "🌅"
+    },
+    {
+      "id": "snacks",
+      "name": "零食",
+      "icon": "🍪"
+    },
+    {
+      "id": "drinks",
+      "name": "饮料",
+      "icon": "🥤"
+    },
+    {
+      "id": "frozen",
+      "name": "冻品",
+      "icon": "🧊"
+    },
+    {
+      "id": "condiment",
+      "name": "调味品",
+      "icon": "🧂"
+    },
+    {
+      "id": "toiletries",
+      "name": "日用品",
+      "icon": "🧴"
+    },
+    {
+      "id": "other",
+      "name": "其他",
+      "icon": "📦"
+    }
+  ],
+  "items": [
+    {
+      "id": "test",
+      "name": "test",
+      "price": 9,
+      "unit": "个",
+      "category": "instant_noodles"
+    }
+  ]
+}
