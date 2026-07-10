@@ -107,11 +107,12 @@ async function gitHubPutFile(path, content, sha) {
  */
 async function fetchRawFile(path) {
   const cfg = getGiteeConfig();
+  const t = Date.now();
   const urls = [
+    // GitHub raw（加时间戳防缓存）
+    `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path}?t=${t}`,
     // GitHub Pages
-    `https://${cfg.owner}.github.io/${cfg.repo}/${path}`,
-    // GitHub raw
-    `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${cfg.branch}/${path}`,
+    `https://${cfg.owner}.github.io/${cfg.repo}/${path}?t=${t}`,
   ];
   let lastErr = null;
   for (const url of urls) {
@@ -149,12 +150,35 @@ async function fetchItems() {
 /** 保存物品清单到仓库 */
 async function saveItems(items) {
   if (!hasGiteeConfig()) throw new Error('请先在管理页配置仓库信息');
+  
+  // 尝试获取 SHA
   let sha;
   try {
     const existing = await gitHubGetFile(ITEMS_PATH);
     sha = existing.sha;
-  } catch { sha = undefined; }
-  await gitHubPutFile(ITEMS_PATH, items, sha);
+  } catch { /* 文件还不存在或网络问题 */ }
+  
+  // 尝试写入，失败则重试
+  const maxRetries = 2;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      await gitHubPutFile(ITEMS_PATH, items, sha);
+      return; // 成功
+    } catch (e) {
+      // 如果是因为缺少 SHA 导致的 422，获取 SHA 后重试
+      if (sha === undefined && e.message.includes('422')) {
+        try {
+          const existing = await gitHubGetFile(ITEMS_PATH);
+          sha = existing.sha;
+          continue; // 重试
+        } catch { /* 还是拿不到，继续重试 */ }
+      }
+      // 最后一次尝试还失败就抛出
+      if (i >= maxRetries) throw e;
+      // 否则等待后重试
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
 }
 
 // ============================================================
@@ -178,6 +202,21 @@ async function saveSelections(selections) {
   try {
     const existing = await gitHubGetFile(SELECTIONS_PATH);
     sha = existing.sha;
-  } catch { sha = undefined; }
-  await gitHubPutFile(SELECTIONS_PATH, selections, sha);
+  } catch { }
+  for (let i = 0; i <= 2; i++) {
+    try {
+      await gitHubPutFile(SELECTIONS_PATH, selections, sha);
+      return;
+    } catch (e) {
+      if (sha === undefined && e.message.includes('422')) {
+        try {
+          const existing = await gitHubGetFile(SELECTIONS_PATH);
+          sha = existing.sha;
+          continue;
+        } catch { }
+      }
+      if (i >= 2) throw e;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
 }
