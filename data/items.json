@@ -2,51 +2,51 @@
   "categories": [
     {
       "id": "instant_noodles",
-      "name": "æ³¡é¢",
-      "icon": "ð"
+      "name": "Ã¦Â³Â¡Ã©ÂÂ¢",
+      "icon": "Ã°ÂÂÂ"
     },
     {
       "id": "breakfast",
-      "name": "æ©é¤",
-      "icon": "ð"
+      "name": "Ã¦ÂÂ©Ã©Â¤Â",
+      "icon": "Ã°ÂÂÂ"
     },
     {
       "id": "snacks",
-      "name": "é¶é£",
-      "icon": "ðª"
+      "name": "Ã©ÂÂ¶Ã©Â£Â",
+      "icon": "Ã°ÂÂÂª"
     },
     {
       "id": "drinks",
-      "name": "é¥®æ",
-      "icon": "ð¥¤"
+      "name": "Ã©Â¥Â®Ã¦ÂÂ",
+      "icon": "Ã°ÂÂ¥Â¤"
     },
     {
       "id": "frozen",
-      "name": "å»å",
-      "icon": "ð§"
+      "name": "Ã¥ÂÂ»Ã¥ÂÂ",
+      "icon": "Ã°ÂÂ§Â"
     },
     {
       "id": "condiment",
-      "name": "è°å³å",
-      "icon": "ð§"
+      "name": "Ã¨Â°ÂÃ¥ÂÂ³Ã¥ÂÂ",
+      "icon": "Ã°ÂÂ§Â"
     },
     {
       "id": "toiletries",
-      "name": "æ¥ç¨å",
-      "icon": "ð§´"
+      "name": "Ã¦ÂÂ¥Ã§ÂÂ¨Ã¥ÂÂ",
+      "icon": "Ã°ÂÂ§Â´"
     },
     {
       "id": "other",
-      "name": "å¶ä»",
-      "icon": "ð¦"
+      "name": "Ã¥ÂÂ¶Ã¤Â»Â",
+      "icon": "Ã°ÂÂÂ¦"
     }
   ],
   "items": [
     {
-      "id": "面",
-      "name": "面",
+      "id": "é¢",
+      "name": "é¢",
       "price": 9,
-      "unit": "个",
+      "unit": "ä¸ª",
       "category": "instant_noodles"
     }
   ]
