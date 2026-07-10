@@ -8,20 +8,6 @@
   ],
   "items": [
     {
-      "id": "milk",
-      "name": "纯牛奶",
-      "category": "breakfast",
-      "price": 5,
-      "unit": "盒"
-    },
-    {
-      "id": "面条",
-      "name": "面条",
-      "price": 9,
-      "unit": "个",
-      "category": "breakfast"
-    },
-    {
       "id": "test",
       "name": "test",
       "price": 9,
