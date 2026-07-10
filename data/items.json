@@ -1,1 +1,30 @@
-{"categories": [{"id": "instant_noodles", "name": "泡面", "icon": "🍜"}, {"id": "breakfast", "name": "早餐", "icon": "🌅"}], "items": [{"id": "demo", "name": "示例物品", "category": "breakfast", "price": 5, "unit": "个"}]}
+{
+  "categories": [
+    {
+      "id": "instant_noodles",
+      "name": "泡面",
+      "icon": "🍜"
+    },
+    {
+      "id": "breakfast",
+      "name": "早餐",
+      "icon": "🌅"
+    }
+  ],
+  "items": [
+    {
+      "id": "demo",
+      "name": "示例物品",
+      "category": "breakfast",
+      "price": 5,
+      "unit": "个"
+    },
+    {
+      "id": "面111",
+      "name": "面111",
+      "price": 9,
+      "unit": "个",
+      "category": "instant_noodles"
+    }
+  ]
+}
