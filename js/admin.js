@@ -195,8 +195,7 @@ function bindEvents() {
   // 保存配置
   $('#btn-save-config').addEventListener('click', saveConfig);
 
-  // 导出预览
-  $('#btn-preview').addEventListener('click', previewData);
+
 
   // 新增分类
   $('#btn-add-category').addEventListener('click', addCategory);
@@ -384,15 +383,6 @@ function loadCustomCategories() {
     const raw = localStorage.getItem(CUSTOM_CATS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
-}
-
-// ============================================================
-// 预览
-// ============================================================
-function previewData() {
-  const data = { categories: state.categories, items: state.items };
-  const win = window.open('', '_blank');
-  win.document.write(`<pre style="font-size:13px;">${JSON.stringify(data, null, 2)}</pre>`);
 }
 
 // ============================================================
