@@ -18,6 +18,20 @@
 
 const CONFIG_KEY = 'gitee_config';
 
+function b64DecodeUtf8(b64) {
+  // atob 产生 Latin-1 字节，需要转换回 UTF-16
+  try {
+    return decodeURIComponent(escape(atob(b64)));
+  } catch {
+    // 纯 ASCII 回退
+    return atob(b64);
+  }
+}
+
+function b64EncodeUtf8(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
 const defaultConfig = {
   owner: 'ZaneZhao-1227',
   repo: 'price-list',
@@ -70,7 +84,7 @@ async function gitHubGetFile(path) {
     throw new Error(`读取失败: ${resp.status} ${resp.statusText}`);
   }
   const data = await resp.json();
-  const decoded = atob(data.content);
+  const decoded = b64DecodeUtf8(data.content);
   return { data: JSON.parse(decoded), sha: data.sha };
 }
 
@@ -82,7 +96,7 @@ async function gitHubPutFile(path, content, sha) {
   const url = `${API_BASE}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
   const body = {
     message: `更新 ${path}`,
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+    content: b64EncodeUtf8(JSON.stringify(content, null, 2)),
     branch: cfg.branch,
   };
   if (sha) body.sha = sha;
