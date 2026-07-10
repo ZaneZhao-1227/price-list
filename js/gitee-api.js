@@ -131,15 +131,18 @@ const ITEMS_PATH = 'data/items.json';
 
 /** 读取物品清单 */
 async function fetchItems() {
-  try {
-    return await fetchRawFile(ITEMS_PATH);
-  } catch {
+  // 优先用 API（有 token 时实时返回最新数据，无 CDN 延迟）
+  if (hasGiteeConfig()) {
     try {
       const result = await gitHubGetFile(ITEMS_PATH);
       return result.data;
-    } catch {
-      throw new Error('无法读取物品清单，请先在管理页配置仓库并保存物品');
-    }
+    } catch { /* API 失败则回退 raw */ }
+  }
+  // 无 token 或无配置时通过 raw URL 读取
+  try {
+    return await fetchRawFile(ITEMS_PATH);
+  } catch {
+    throw new Error('无法读取物品清单，请先在管理页配置仓库并保存物品');
   }
 }
 
