@@ -1,18 +1,1 @@
-{
-  "categories": [
-    {
-      "id": "breakfast",
-      "name": "早餐",
-      "icon": "🌅"
-    }
-  ],
-  "items": [
-    {
-      "id": "test",
-      "name": "test",
-      "price": 9,
-      "unit": "个",
-      "category": "breakfast"
-    }
-  ]
-}
+{"categories": [{"id": "breakfast", "name": "早餐", "icon": "🌅"}], "items": []}
