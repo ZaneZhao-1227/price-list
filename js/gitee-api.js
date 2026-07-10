@@ -151,31 +151,29 @@ async function fetchItems() {
 async function saveItems(items) {
   if (!hasGiteeConfig()) throw new Error('请先在管理页配置仓库信息');
   
-  // 尝试获取 SHA
   let sha;
   try {
     const existing = await gitHubGetFile(ITEMS_PATH);
     sha = existing.sha;
-  } catch { /* 文件还不存在或网络问题 */ }
+  } catch { }
   
-  // 尝试写入，失败则重试
-  const maxRetries = 2;
+  const maxRetries = 3;
   for (let i = 0; i <= maxRetries; i++) {
     try {
       await gitHubPutFile(ITEMS_PATH, items, sha);
-      return; // 成功
+      return;
     } catch (e) {
-      // 如果是因为缺少 SHA 导致的 422，获取 SHA 后重试
-      if (sha === undefined && e.message.includes('422')) {
+      const msg = e.message;
+      // SHA 过期或缺失 → 重新获取 SHA 后重试
+      if ((sha === undefined && msg.includes('422')) || msg.includes('409') || msg.includes('does not match')) {
         try {
           const existing = await gitHubGetFile(ITEMS_PATH);
           sha = existing.sha;
-          continue; // 重试
-        } catch { /* 还是拿不到，继续重试 */ }
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        } catch { }
       }
-      // 最后一次尝试还失败就抛出
       if (i >= maxRetries) throw e;
-      // 否则等待后重试
       await new Promise(r => setTimeout(r, 1000));
     }
   }
@@ -203,19 +201,19 @@ async function saveSelections(selections) {
     const existing = await gitHubGetFile(SELECTIONS_PATH);
     sha = existing.sha;
   } catch { }
-  for (let i = 0; i <= 2; i++) {
+  for (let i = 0; i <= 3; i++) {
     try {
       await gitHubPutFile(SELECTIONS_PATH, selections, sha);
       return;
     } catch (e) {
-      if (sha === undefined && e.message.includes('422')) {
+      if ((sha === undefined && e.message.includes('422')) || e.message.includes('409') || e.message.includes('does not match')) {
         try {
           const existing = await gitHubGetFile(SELECTIONS_PATH);
           sha = existing.sha;
           continue;
         } catch { }
       }
-      if (i >= 2) throw e;
+      if (i >= 3) throw e;
       await new Promise(r => setTimeout(r, 1000));
     }
   }
