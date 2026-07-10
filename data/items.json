@@ -48,6 +48,13 @@
       "price": 9,
       "unit": "个",
       "category": "breakfast"
+    },
+    {
+      "id": "面2",
+      "name": "面",
+      "price": 9,
+      "unit": "个",
+      "category": "instant_noodles"
     }
   ]
 }
