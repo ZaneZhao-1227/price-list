@@ -11,7 +11,6 @@ const $ = s => document.querySelector(s);
 const elDate      = $('#date-badge');
 const elSummary   = $('#summary-container');
 const elUsers     = $('#user-list');
-const elRefresh   = $('#btn-refresh');
 const elClear = $('#btn-clear-all');
 const elToast     = $('#toast');
 const elConfigTip = $('#config-tip');
