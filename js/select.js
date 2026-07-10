@@ -1,5 +1,6 @@
 /**
  * 用户端 — 选购页面逻辑
+ * 每 30 秒自动刷新物品清单
  */
 
 // ============================================================
@@ -10,6 +11,7 @@ let state = {
   selections: {},
   items: [],
   categories: [],
+  lastLoadTime: null,
 };
 
 // DOM
@@ -21,6 +23,10 @@ const elSaveBtn    = $('#btn-save');
 const elResetBtn   = $('#btn-reset');
 const elToast      = $('#toast');
 const elPeople     = $('#people-count');
+const elRefreshBtn = $('#btn-refresh-items');
+const elUpdateTime = $('#update-time');
+
+let autoTimer = null;
 
 // ============================================================
 // 初始化
@@ -35,19 +41,22 @@ async function init() {
     elUsername.value = savedUser;
   }
 
-  // 配置提示
-  if (!hasGiteeConfig()) {
-    const tip = $('#config-tip');
-    if (tip) tip.style.display = 'block';
-  }
-
   await loadItems();
-  // 恢复该用户本地选购
   state.selections = loadUser(state.username);
 
   renderItems();
   renderPeople();
   bindEvents();
+
+  // 启动自动刷新（30 秒）
+  startAutoRefresh();
+}
+
+function startAutoRefresh() {
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(async () => {
+    await refreshItems();
+  }, 30000);
 }
 
 // ============================================================
@@ -58,28 +67,43 @@ async function loadItems() {
     const data = await fetchItems();
     state.items = data.items || [];
     state.categories = data.categories || [];
+    state.lastLoadTime = new Date();
   } catch {
-    // 回退：使用 data.js 内置数据
     state.items = window.__fallbackItems || [];
     state.categories = window.__fallbackCategories || [];
   }
+}
 
-  if (state.items.length === 0) {
-    elContainer.innerHTML = `<div class="empty-state">
-      <div class="icon">📦</div>
-      <p>暂无可选购的物品<br>请管理员先在「管理」页添加物品并同步到 Gitee</p>
-    </div>`;
-    return;
+/** 刷新物品清单（保留用户已选数量） */
+async function refreshItems() {
+  const oldItems = state.items;
+  await loadItems();
+
+  // 检查物品是否有变化
+  const changed = JSON.stringify(oldItems.map(i => i.id).sort()) !==
+                  JSON.stringify(state.items.map(i => i.id).sort());
+  if (changed && elUpdateTime) {
+    const now = state.lastLoadTime;
+    elUpdateTime.textContent = `物品已更新 (${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')})`;
+    elUpdateTime.style.color = 'var(--color-accent)';
+    setTimeout(() => { elUpdateTime.style.color = ''; }, 3000);
   }
+
+  renderItems();
 }
 
 // ============================================================
 // 渲染
 // ============================================================
 function renderItems() {
-  if (state.items.length === 0) return;
+  if (state.items.length === 0) {
+    elContainer.innerHTML = `<div class="empty-state">
+      <div class="icon">📦</div>
+      <p>暂无可选购的物品<br>请管理员先在「管理」页添加物品并同步</p>
+    </div>`;
+    return;
+  }
 
-  // 按分类分组
   const grouped = {};
   for (const cat of state.categories) grouped[cat.id] = [];
   for (const item of state.items) {
@@ -87,7 +111,6 @@ function renderItems() {
   }
 
   let html = '';
-
   for (const cat of state.categories) {
     const list = grouped[cat.id];
     if (!list || list.length === 0) continue;
@@ -98,7 +121,6 @@ function renderItems() {
       ${cat.name}
       <span class="count">${list.length} 种</span>
     </div>`;
-
     html += `<div class="items-grid">`;
     for (const item of list) {
       const qty = state.selections[item.id] || 0;
@@ -137,7 +159,6 @@ async function renderPeople() {
     const count = Object.keys(selections).length;
     elPeople.textContent = count > 0 ? `${count} 人已选购` : '暂无提交';
   } catch {
-    // 文件可能还不存在
     elPeople.textContent = '';
   }
 }
@@ -164,6 +185,14 @@ function bindEvents() {
 
   elSaveBtn.addEventListener('click', save);
   elResetBtn.addEventListener('click', resetSelections);
+
+  if (elRefreshBtn) {
+    elRefreshBtn.addEventListener('click', async () => {
+      await refreshItems();
+      await renderPeople();
+      showToast('已刷新物品清单');
+    });
+  }
 }
 
 function changeQty(id, delta) {
@@ -183,31 +212,27 @@ async function save() {
     return;
   }
 
-  // 清理
   const cleaned = {};
   for (const [id, qty] of Object.entries(state.selections)) {
     if (qty > 0) cleaned[id] = qty;
   }
   state.selections = cleaned;
 
-  // 存本地
   saveUser(state.username, cleaned);
 
-  // 如果配置了 Gitee，同步到云端
   if (hasGiteeConfig()) {
     try {
       let all = {};
       try { all = await fetchSelections(); } catch { /* 文件还不存在 */ }
       all[state.username] = cleaned;
       await saveSelections(all);
-      showToast('✅ 已保存并同步到云端');
+      showToast('✅ 已保存并同步');
     } catch (e) {
       showToast('⚠️ 已保存到本地，云端同步失败: ' + e.message);
     }
   } else {
     showToast('✅ 已保存到本地');
   }
-
   renderPeople();
 }
 
