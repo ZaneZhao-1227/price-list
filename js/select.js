@@ -62,6 +62,21 @@ function startAutoRefresh() {
 // 加载物品
 // ============================================================
 async function loadItems() {
+  // 1. 优先从本地 localStorage 读取（管理员同浏览器刚保存的，即时展示）
+  try {
+    const raw = localStorage.getItem('admin_items');
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.items && data.items.length > 0) {
+        state.items = data.items;
+        state.categories = data.categories || [];
+        state.lastLoadTime = new Date();
+        return;
+      }
+    }
+  } catch {}
+  
+  // 2. 本地没有，从公开 API 读取
   try {
     const data = await fetchItems();
     state.items = data.items || [];
